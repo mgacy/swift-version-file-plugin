@@ -24,7 +24,7 @@ let package = Package(
     // name, platforms, products, etc.
     dependencies: [
         // other dependencies
-        .package(url: "https://github.com/mobelux/swift-version-file-plugin", from: "1.0.0"),
+        .package(url: "https://github.com/mgacy/swift-version-file-plugin", from: "1.0.0"),
     ],
     targets: [
         // targets
