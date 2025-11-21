@@ -159,7 +159,7 @@ private extension VersionFile {
             /// The current version number.
             static let number = "\(version)"
         }
-        
+
         """
     }
 

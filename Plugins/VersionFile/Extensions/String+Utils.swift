@@ -20,7 +20,7 @@ extension String {
         let results = regEx.matches(
             in: self,
             range: NSRange(startIndex..., in: self))
-        
+
         return results.map {
             String(self[Range($0.range, in: self)!])
         }
