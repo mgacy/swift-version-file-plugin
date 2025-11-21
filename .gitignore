@@ -7,3 +7,9 @@ DerivedData/
 .swiftpm/config/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
+
+# User-specific configs
+.claude-tracking/
+.claude/settings.local.json
+.mcp.json
+.vscode
