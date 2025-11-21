@@ -136,7 +136,7 @@ private extension VersionFile {
     /// - Parameter path: The path to the version file.
     /// - Returns:  The current version number.
     func currentVersion(path: Path) throws -> String {
-        let fileContents = try String(contentsOfFile: path.string)
+        let fileContents = try String(contentsOfFile: path.string, encoding: .utf8)
 
         let regEx = try NSRegularExpression(pattern: Constants.versionPattern)
         guard let versionString = fileContents.matches(for: regEx).first else {
