@@ -15,7 +15,12 @@ extension String: LocalizedError {
 }
 
 extension String {
-    // Adapted from: https://stackoverflow.com/a/27880748
+    /// Returns an array of strings matching the given regular expression.
+    ///
+    /// Adapted from: https://stackoverflow.com/a/27880748
+    ///
+    /// - Parameter regEx: The regular expression to match against.
+    /// - Returns: An array of strings that match the regular expression.
     func matches(for regEx: NSRegularExpression) -> [String] {
         let results = regEx.matches(
             in: self,
