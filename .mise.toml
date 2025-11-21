@@ -1,0 +1,13 @@
+[tools]
+"spm:realm/SwiftLint" = "0.62.2"
+
+[settings]
+experimental = true
+
+[tasks.lint]
+description = "Lint the code"
+run = "swiftlint"
+
+[tasks.lint-fix]
+description = "Auto-fix linting issues"
+run = "swiftlint --fix"
