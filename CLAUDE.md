@@ -99,6 +99,6 @@ func currentVersion(path: Path) throws -> String {
 
 ## Requirements
 
-- Swift 5.6+ (specified in Package.swift)
+- Swift 5.9+ (specified in Package.swift)
 - Uses PackagePlugin framework
 - Requires `--allow-writing-to-package-directory` permission flag

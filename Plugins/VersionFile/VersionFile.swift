@@ -122,6 +122,10 @@ private extension VersionFile {
             switch target.kind {
             case .generic, .executable:
                 return target
+            case .macro:
+                return nil
+            case .snippet:
+                return nil
             case .test:
                 return nil
             @unknown default:
