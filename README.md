@@ -1,8 +1,8 @@
 # VersionFilePlugin
 
-The VersionFilePlugin is a Swift Package Manager command plugin that supports maintaining a 
-`Version` type with a semantic version number for packages that need to be aware of their version. 
-It uses the [semver shell utility](https://github.com/fsaintjacques/semver-tool) to bump version 
+The VersionFilePlugin is a Swift Package Manager command plugin that supports maintaining a
+`Version` type with a semantic version number for packages that need to be aware of their version.
+It uses the [semver shell utility](https://github.com/fsaintjacques/semver-tool) to bump version
 numbers according to major / minor / patch releases.
 
 The created file looks like:
@@ -24,7 +24,7 @@ let package = Package(
     // name, platforms, products, etc.
     dependencies: [
         // other dependencies
-        .package(url: "https://github.com/mgacy/swift-version-file-plugin", from: "1.0.0"),
+        .package(url: "https://github.com/mgacy/swift-version-file-plugin", from: "0.2.1"),
     ],
     targets: [
         // targets
