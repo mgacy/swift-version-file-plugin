@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-VersionFilePlugin is a Swift Package Manager command plugin that maintains a `Version.swift` file containing semantic version numbers. The plugin uses the bundled semver binary to bump versions according to semantic versioning rules (major/minor/patch/release/prerel).
+VersionFilePlugin is a Swift Package Manager command plugin that maintains a `Version.swift` file containing semantic version numbers. It uses the bundled [semver shell utility](https://github.com/fsaintjacques/semver-tool) binary to bump versions according to semantic versioning rules (major/minor/patch/release/prerel).
 
 ## Development Commands
 
@@ -15,14 +15,11 @@ swift build
 
 ### Linting
 ```bash
-# Run linting
-mise run lint
-
-# Auto-fix linting issues
-mise run lint-fix
+mise run lint          # Run linting
+mise run lint-fix      # Auto-fix linting issues
 ```
 
-The project uses SwiftLint 0.62.2 managed by mise. Configuration is in `.swiftlint.yml` with specific opt-in rules and customizations.
+SwiftLint 0.62.2 is managed by mise. Configuration is in `.swiftlint.yml`.
 
 ### Testing the Plugin
 ```bash
@@ -39,236 +36,66 @@ swift package --allow-writing-to-package-directory version-file --verbose --bump
 ## Architecture
 
 ### Plugin Structure
-The plugin is implemented as a SPM Command Plugin (`CommandPlugin`) with three main components:
+The plugin is a SPM Command Plugin (`CommandPlugin`) in `Plugins/VersionFile/`:
 
-1. **VersionFile.swift** (`Plugins/VersionFile/VersionFile.swift`) - Main plugin entry point implementing `CommandPlugin` protocol
-   - `performCommand()` - Entry point that processes arguments and executes commands
-   - Supports two commands: `--bump <type>` and `--create <version>`
-   - Target selection via `--target` option (defaults to all generic/executable targets, excludes test targets)
+- **VersionFile.swift** - Main plugin entry point implementing `CommandPlugin`. `performCommand()` processes arguments and dispatches to either `--bump <type>` or `--create <version>`. Target selection via `--target` option (defaults to all generic/executable targets, excludes test targets).
+- **Extensions/String+Utils.swift** - Regex matching helper and `String: Error` conformance (allows throwing string literals directly as errors).
+- **Extensions/PackagePlugin+Utils.swift** - Debug description for `PackagePlugin.Target`.
 
-2. **Extension Utilities**:
-   - `String+Utils.swift` - String extensions for regex matching and error handling
-   - `PackagePlugin+Utils.swift` - Debug description utilities for PackagePlugin types
-
-3. **Binary Dependency** - Bundled `semver` tool in `Artifacts/semver.artifactbundle`
-   - Binary target defined in Package.swift
-   - Invoked via Process execution for version bumping logic
+### Binary Dependency
+The bundled `semver` tool lives in `Artifacts/semver.artifactbundle` and is defined as a binary target in `Package.swift`. It's invoked as a subprocess for version bumping.
 
 ### Code Flow
 1. Plugin extracts command arguments (bump type or create version)
-2. Identifies target source directories to process
+2. Identifies target source directories (`SourceModuleTarget` with `.generic` or `.executable` kind)
 3. For bump: reads existing `Version.swift`, runs semver tool, writes new version
 4. For create: writes new `Version.swift` with specified version
-5. Generated file format is always: `enum Version { static let number = "x.y.z" }`
+5. Generated file format: `enum Version { static let number = "x.y.z" }`
 
-### Key Design Decisions
-- Plugin operates on `SourceModuleTarget` only (generic or executable kinds)
-- Version file is always named `Version.swift` in target root directory
-- Version parsing uses regex pattern: `([0-9]+\.*)+ `
-- The semver binary is executed as a subprocess rather than implemented in Swift
+### CI/CD
+The `.github/workflows/release.yml` workflow is manually triggered (`workflow_dispatch`) to create releases. It fetches the latest release tag, bumps the version using `mgacy/bump-version-action`, creates a git tag, and publishes a GitHub release.
 
 ## Code Style
 
-### General Guidelines
-
-- Use explicit types for public APIs
-- Prefer computed properties over methods for simple getters
-- Use guard statements for early returns
-- Mark models as Sendable for Swift 6 concurrency
-- Keep functions under 50 lines (enforced by SwiftLint)
-- Use descriptive variable names (not `i`, `j`, but `lineIndex`, `headerLevel`)
-
-#### File Naming
-- `TypeName.swift` for primary type definitions
-- `TypeName+Extension.swift` or `TypeName+Utils.swift` for extensions
-- `TypeName+Protocol.swift` for protocol conformances
-
-### File Structure
-
-Every file should start with a standard header comment block:
-
+### File Headers
+Every file starts with a standard header comment block:
 ```swift
 //
 //  FileName.swift
-//  ModuleName
+//  VersionFilePlugin
 //
 //  Created by Author Name on MM/DD/YY.
 //
 ```
 
-- Organize imports alphabetically
+### Conventions
+- Use explicit types for public APIs
+- Prefer guard statements for early returns
+- Mark models as `Sendable` for Swift 6 concurrency
+- Use `TypeName+Extension.swift` naming for extension files
+- Use extensions to organize protocol conformances (with `// MARK: -` headers)
+- Prefer computed properties over methods for simple getters
+- Prefer typed throwing errors over generic `Error`
+- Wrap long parameter lists across multiple lines, aligned vertically
+- Document all public properties with `///` doc comments
 
-### Protocol Conformance
+### SwiftLint Thresholds
+Key non-default SwiftLint settings:
+- `line_length`: 200
+- `function_body_length`: 50
+- `file_length`: warning at 500, error at 1000
+- `large_tuple`: warning at 6, error at 10
+- `cyclomatic_complexity`: ignores case statements
+- `identifier_name` excluded: `id`, `me`, `or`
 
-#### Standard Pattern
-
-Declare multiple conformances in the type declaration:
-
+### Documentation Style
 ```swift
-public struct UserProfile: Codable, Equatable, Identifiable, Sendable {
-    // Implementation
-}
+/// Returns the current version number from the version file at the given path.
+///
+/// - Parameter path: The path to the version file.
+/// - Returns: The current version number.
+func currentVersion(path: Path) throws -> String {
 ```
-
-#### Sendable Protocol
-
-Always include `Sendable` for types used in concurrent contexts:
-
-```swift
-public struct AppError: Error, LocalizedError, Sendable { }
-public enum Handedness: Codable, Equatable, Sendable { }
-```
-
-#### Protocol Extensions
-
-Use extensions to organize protocol conformance implementations:
-
-```swift
-// MARK: - CustomStringConvertible
-extension ObjectClass: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .basketball: return "Basketball"
-        case .hoop: return "Hoop"
-        }
-    }
-}
-```
-
-### Extension Usage
-
-Extensions are preferred for:
-1. **Adding utility methods to standard types**
-2. **Organizing protocol conformances**
-3. **Breaking up large type implementations**
-4. **Grouping related functionality**
-
-```swift
-// MARK: - Floating Point Operations
-public extension Array where Element: FloatingPoint {
-    var mean: Element { sum / Element(count) }
-    var sum: Element { reduce(Element(0), +) }
-}
-```
-
-### Error Handling
-
-- Prefer using typed throwing errors over generic `Error`
-
-### Indentation and Formatting
-
-- Use **4 spaces** for indentation (Swift standard)
-- Wrap long parameter lists across multiple lines
-- Align parameters vertically when wrapping
-
-```swift
-public init(
-    id: UUID,
-    name: String,
-    height: Measurement<UnitLength>,
-    handedness: Handedness
-) {
-    self.id = id
-    self.name = name
-    self.height = height
-    self.handedness = handedness
-}
-```
-
-### Documentation
-
-- Include a single line between sections
-- Maximum line length of 100 characters in documentation
-- Use punctuation and complete sentences
-- Document all public properties
-
-<example>
-```swift
-/// A Swift package target.
-struct Target: Equatable, Sendable {
-
-    /// A plug-in used in a target.
-    struct PluginUsage: Equatable, Sendable {
-        /// The name of the plug-in target.
-        let name: String
-
-        /// The name of the package defining the plug-in target.
-        let package: String?
-    }
-
-    /// A resource to bundle with the Swift package.
-    struct Resource: Equatable, Sendable {
-
-        /// The different types of localization for resources.
-        public enum Localization: String, Codable, Equatable, Sendable {
-            /// The default localization.
-            case base
-            /// The base internationalization.
-            case `default`
-        }
-
-        /// The different rules for resources.
-        enum Rule: Equatable, Sendable {
-            /// A rule that copies the resource.
-            case copy
-            /// A rule that embeds the resource in code.
-            case embedInCode
-            /// A rule that processes the resource with a specific localization.
-            case process(_ localization: Localization?)
-        }
-
-        /// The rule for the resource.
-        let rule: Rule
-
-        /// The path of the resource.
-        let path: String
-    }
-
-    /// The different types of a target.
-    enum TargetType: String, Sendable {
-        /// A target that contains code for the Swift package's functionality.
-        case regular = "target"
-        /// A target that contains code for an executable's main module.
-        case executable = "executableTarget"
-        /// A target that contains tests for the Swift package's other targets.
-        case test = "testTarget"
-    }
-
-    /// The name of the target.
-    let name: String
-
-    /// The type of the target.
-    let type: TargetType
-
-    /// A Boolean value determining whether access to package declarations from other targets in
-    /// the package is allowed.
-    let packageAccess: Bool
-
-    /// The path of the target, relative to the package root.
-    let path: String?
-
-    /// Creates an instance.
-    ///
-    /// - Parameters:
-    ///   - name: The name of the target.
-    ///   - type: The type of the target.
-    ///   - packageAccess: Whether access to package declarations from other targets in the package
-    ///   is allowed.
-    ///   - path: The path of the target, relative to the package root.
-    init(
-        name: String,
-        type: Target.TargetType = .regular,
-        packageAccess: Bool = true,
-        path: String? = nil
-    ) {
-        self.name = name
-        self.type = type
-        self.packageAccess = packageAccess
-        self.path = path
-    }
-}
-```
-</example>
 
 ## Requirements
 
