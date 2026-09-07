@@ -32,7 +32,7 @@ let package = Package(
 )
 ```
 
-Swift 5.6 is required in order to run the plugin.
+Swift 5.9 is required in order to run the plugin.
 
 ### Creating a Version File
 
